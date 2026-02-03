@@ -1,5 +1,6 @@
 ---
 name: memory-search
+mcp_tool: memory_search
 description: |
   Search through saved memories using keywords.
   Returns relevant memories that match the search query.
@@ -19,6 +20,12 @@ parameters:
 # Memory Search Skill
 
 Search through persistent memories to recall past information.
+
+## MCP Tool
+
+This skill is exposed as an MCP tool: `memory_search`
+
+To use via MCP, call the `memory_search` tool with the parameters described above.
 
 ## When to Use
 

@@ -1,9 +1,11 @@
 ---
 name: send-reply
+mcp_tool: send_reply
 description: |
   Send the final reply message to the user on the platform.
   This is the ONLY way to communicate with the user externally.
   Can only be called ONCE per interaction - subsequent calls will fail.
+  NOTE: In MCP mode, this returns the message as tool result instead of sending directly.
 parameters:
   type: object
   properties:
@@ -29,6 +31,17 @@ parameters:
 # Send Reply Skill
 
 Send your final response to the user. This is the gateway to external communication.
+
+## MCP Tool
+
+This skill is exposed as an MCP tool: `send_reply`
+
+To use via MCP, call the `send_reply` tool with the parameters described above.
+
+> [!NOTE]
+> In MCP mode, this tool returns the message as the tool result instead of
+> sending it directly to the platform. The MCP host is responsible for delivering
+> the message to the user.
 
 ## Critical Rules
 

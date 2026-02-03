@@ -20,6 +20,7 @@ Agent Chatbot is a multi-platform conversational AI bot that acts as an **ACP (A
 | Runtime         | Deno                     | 2.x           |
 | Language        | TypeScript               | (Deno native) |
 | ACP SDK         | @agentclientprotocol/sdk | 0.13.1        |
+| MCP SDK         | @modelcontextprotocol/sdk| ^1.11.2       |
 | Discord Library | discord.js               | ^14.0.0       |
 | Configuration   | YAML (via @std/yaml)     | -             |
 | Testing         | Deno.test + @std/assert  | -             |
@@ -48,11 +49,34 @@ Agent Chatbot is a multi-platform conversational AI bot that acts as an **ACP (A
 └─────────────────────────────────────────────────────────────┘
 ```
 
+### MCP Tool Provider Architecture
+
+In addition to the ACP Client mode, skills are also exposed as MCP tools:
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│       MCP Host (VS Code Copilot, Copilot CLI, Cursor)       │
+│                          ↓                                  │
+│              MCP Protocol (stdio JSON-RPC)                  │
+│                          ↓                                  │
+├─────────────────────────────────────────────────────────────┤
+│          Agent Chatbot MCP Server (src/mcp/server.ts)       │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │                   MCP Tools                          │   │
+│  │  memory_save   memory_search   memory_patch          │   │
+│  │  send_reply    fetch_context                         │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                          ↓                                  │
+│        MemoryStore  /  WorkspaceManager                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ### Core Components
 
 | Directory        | Purpose                                            |
 | ---------------- | -------------------------------------------------- |
 | `src/core/`      | Agent session, workspace manager, context assembly |
+| `src/mcp/`       | MCP server exposing skills as MCP tools            |
 | `src/platforms/` | Platform adapters (Discord, Misskey)               |
 | `src/skills/`    | Skill handlers invoked by external Agents          |
 | `src/types/`     | TypeScript type definitions                        |
@@ -68,6 +92,10 @@ deno task dev
 
 # Production
 deno task start
+
+# MCP Server (for VS Code/Copilot CLI integration)
+deno task mcp:start    # Production
+deno task mcp:dev      # Development with watch
 
 # Run all tests
 deno task test
@@ -369,6 +397,10 @@ agent-chatbot/
 │   │   ├── context.ts        # Context assembly
 │   │   ├── memory.ts         # Memory operations
 │   │   └── error-handler.ts  # Global error handling
+│   ├── mcp/
+│   │   ├── server.ts         # MCP server entry point
+│   │   ├── mod.ts            # Module exports
+│   │   └── types.ts          # MCP type definitions
 │   ├── platforms/
 │   │   ├── adapter.ts        # Platform adapter interface
 │   │   ├── discord/          # Discord implementation
@@ -398,6 +430,7 @@ agent-chatbot/
 │   └── config.example.yaml
 ├── docs/
 │   ├── DESIGN.md             # Detailed design document
+│   ├── MCP.md                # MCP tool provider docs
 │   └── features/             # BDD feature specs (Gherkin)
 ├── tests/                    # Test files (mirrors src/ structure)
 ├── deno.json                 # Deno configuration
@@ -419,6 +452,8 @@ Before committing, ensure:
 ## Related Documentation
 
 - [docs/DESIGN.md](docs/DESIGN.md) - Detailed design document
+- [docs/MCP.md](docs/MCP.md) - MCP tool provider documentation
 - [docs/features/](docs/features/) - BDD feature specifications
 - [ACP Protocol Spec](https://agentclientprotocol.org/) - Agent Client Protocol
+- [MCP Protocol Spec](https://modelcontextprotocol.io/) - Model Context Protocol
 - [Agent Skills Standard](https://agentskills.io/) - SKILL.md format

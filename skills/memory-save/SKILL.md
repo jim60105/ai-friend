@@ -1,5 +1,6 @@
 ---
 name: memory-save
+mcp_tool: memory_save
 description: |
   Save important information to persistent memory for future conversations.
   Use this to remember user preferences, important facts, or relationship details.
@@ -30,6 +31,12 @@ parameters:
 # Memory Save Skill
 
 This skill allows you to save important information that should persist across conversations.
+
+## MCP Tool
+
+This skill is exposed as an MCP tool: `memory_save`
+
+To use via MCP, call the `memory_save` tool with the parameters described above.
 
 ## When to Use
 

@@ -1,5 +1,6 @@
 ---
 name: memory-patch
+mcp_tool: memory_patch
 description: |
   Modify the state of an existing memory (enable/disable, change visibility/importance).
   Cannot modify the content - only metadata.
@@ -25,6 +26,12 @@ parameters:
 # Memory Patch Skill
 
 Modify metadata of existing memories without changing content.
+
+## MCP Tool
+
+This skill is exposed as an MCP tool: `memory_patch`
+
+To use via MCP, call the `memory_patch` tool with the parameters described above.
 
 ## Capabilities
 

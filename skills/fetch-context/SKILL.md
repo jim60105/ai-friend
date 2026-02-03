@@ -1,8 +1,10 @@
 ---
 name: fetch-context
+mcp_tool: fetch_context
 description: |
   Fetch additional context from the platform when needed.
   Use this to get more message history or search for related conversations.
+  NOTE: In MCP mode, only `user_info` type is fully supported.
 parameters:
   type: object
   properties:
@@ -23,6 +25,16 @@ parameters:
 # Fetch Context Skill
 
 Retrieve additional context from the platform to better understand the conversation.
+
+## MCP Tool
+
+This skill is exposed as an MCP tool: `fetch_context`
+
+To use via MCP, call the `fetch_context` tool with the parameters described above.
+
+> [!NOTE]
+> In MCP mode, only `user_info` type is fully supported.
+> `recent_messages` and `search_messages` require a real platform connection.
 
 ## Available Types
 

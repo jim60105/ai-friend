@@ -13,17 +13,22 @@
     "discord.js": "npm:discord.js@^14.0.0",
     "misskey-js": "npm:misskey-js@2025.12.2",
     "@agentclientprotocol/sdk": "npm:@agentclientprotocol/sdk@^0.13.1",
+    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.11.2",
+    "zod": "npm:zod@^3.25.0",
     "@core/": "./src/core/",
     "@platforms/": "./src/platforms/",
     "@skills/": "./src/skills/",
     "@types/": "./src/types/",
     "@utils/": "./src/utils/",
-    "@acp/": "./src/acp/"
+    "@acp/": "./src/acp/",
+    "@mcp/": "./src/mcp/"
   },
   "tasks": {
     "dev": "deno run --watch --allow-net --allow-read --allow-write --allow-env --allow-run src/main.ts",
     "start": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run src/main.ts",
     "start:config": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run src/main.ts --config",
+    "mcp": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run src/mcp/server.ts",
+    "mcp:dev": "deno run --watch --allow-net --allow-read --allow-write --allow-env --allow-run src/mcp/server.ts",
     "test": "deno test --allow-net --allow-read --allow-write --allow-env --allow-run --parallel",
     "test:watch": "deno test --allow-net --allow-read --allow-write --allow-env --allow-run --watch",
     "test:coverage": "deno test --allow-net --allow-read --allow-write --allow-env --allow-run --coverage=coverage",
