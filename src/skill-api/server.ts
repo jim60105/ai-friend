@@ -103,7 +103,7 @@ export class SkillAPIServer {
     }
 
     const skillName = match[1];
-    return this.handleSkillRequest(request, skillName, headers);
+    return await this.handleSkillRequest(request, skillName, headers);
   }
 
   /**

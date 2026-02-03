@@ -34,6 +34,7 @@ Deno.test("SessionRegistry - registers and retrieves sessions", () => {
 
   const mockAdapter = {
     platform: "discord",
+    // deno-lint-ignore no-explicit-any
   } as any;
 
   const mockEvent = {
@@ -45,6 +46,7 @@ Deno.test("SessionRegistry - registers and retrieves sessions", () => {
     guildId: "",
     content: "test",
     timestamp: new Date(),
+    // deno-lint-ignore no-explicit-any
   } as any;
 
   const sessionId = registry.register({
@@ -90,7 +92,9 @@ Deno.test("SessionRegistry - tracks reply sent status", () => {
     userId: "123",
     isDm: false,
     workspace: mockWorkspace,
+    // deno-lint-ignore no-explicit-any
     platformAdapter: {} as any,
+    // deno-lint-ignore no-explicit-any
     triggerEvent: {} as any,
     timeoutMs: 60000,
   });
@@ -128,7 +132,9 @@ Deno.test("SessionRegistry - removes sessions", () => {
     userId: "123",
     isDm: false,
     workspace: mockWorkspace,
+    // deno-lint-ignore no-explicit-any
     platformAdapter: {} as any,
+    // deno-lint-ignore no-explicit-any
     triggerEvent: {} as any,
     timeoutMs: 60000,
   });
@@ -165,7 +171,9 @@ Deno.test("SessionRegistry - cleans up expired sessions", async () => {
     userId: "123",
     isDm: false,
     workspace: mockWorkspace,
+    // deno-lint-ignore no-explicit-any
     platformAdapter: {} as any,
+    // deno-lint-ignore no-explicit-any
     triggerEvent: {} as any,
     timeoutMs: 100, // 100ms timeout
   });
