@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - master
-  schedule:
-    - cron: "0 4 * * 1" # every Monday at 4am UTC
   workflow_dispatch:
 
 # Sets the permissions granted to the GITHUB_TOKEN for the actions in this job.
