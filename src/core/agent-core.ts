@@ -8,6 +8,8 @@ import { WorkspaceManager } from "./workspace-manager.ts";
 import { ContextAssembler } from "./context-assembler.ts";
 import { MemoryStore } from "./memory-store.ts";
 import { SkillRegistry } from "@skills/registry.ts";
+import { SessionRegistry } from "../skill-api/session-registry.ts";
+import { SkillAPIServer } from "../skill-api/server.ts";
 import type { Config } from "../types/config.ts";
 import type { NormalizedEvent } from "../types/events.ts";
 import type { PlatformAdapter } from "@platforms/platform-adapter.ts";
@@ -23,6 +25,9 @@ export class AgentCore {
   private replyDispatcher: ReplyDispatcher;
   private platformAdapters: Map<string, PlatformAdapter> = new Map();
   private config: Config;
+  private sessionRegistry: SessionRegistry;
+  private skillApiServer: SkillAPIServer | null = null;
+  private orchestrator: SessionOrchestrator;
 
   constructor(config: Config) {
     this.config = config;
@@ -44,6 +49,26 @@ export class AgentCore {
     // Initialize skill registry
     const skillRegistry = new SkillRegistry(memoryStore);
 
+    // Initialize session registry
+    this.sessionRegistry = new SessionRegistry();
+
+    // Initialize skill API server if enabled
+    if (config.skillApi?.enabled) {
+      this.skillApiServer = new SkillAPIServer(
+        this.sessionRegistry,
+        skillRegistry,
+        {
+          port: config.skillApi.port,
+          host: config.skillApi.host,
+        },
+      );
+      this.skillApiServer.start();
+      logger.info("Skill API server enabled", {
+        port: config.skillApi.port,
+        host: config.skillApi.host,
+      });
+    }
+
     // Initialize context assembler
     const contextAssembler = new ContextAssembler(memoryStore, {
       systemPromptPath: config.agent.systemPromptPath,
@@ -53,21 +78,23 @@ export class AgentCore {
     });
 
     // Initialize orchestrator
-    const orchestrator = new SessionOrchestrator(
+    this.orchestrator = new SessionOrchestrator(
       workspaceManager,
       contextAssembler,
       skillRegistry,
       config,
+      this.sessionRegistry,
     );
 
     // Initialize message handler and reply dispatcher
-    this.messageHandler = new MessageHandler(orchestrator);
+    this.messageHandler = new MessageHandler(this.orchestrator);
     this.replyDispatcher = new ReplyDispatcher();
 
     logger.info("Agent Core initialized", {
       workspaceRoot: config.workspace.repoPath,
       tokenLimit: config.agent.tokenLimit,
       memorySearchLimit: config.memory.searchLimit,
+      skillApiEnabled: config.skillApi?.enabled ?? false,
     });
   }
 
@@ -138,5 +165,22 @@ export class AgentCore {
    */
   getConfig(): Config {
     return this.config;
+  }
+
+  /**
+   * Shutdown the core (cleanup resources)
+   */
+  async shutdown(): Promise<void> {
+    logger.info("Shutting down Agent Core");
+
+    // Stop skill API server
+    if (this.skillApiServer) {
+      await this.skillApiServer.stop();
+    }
+
+    // Stop session registry
+    this.sessionRegistry.stop();
+
+    logger.info("Agent Core shutdown complete");
   }
 }

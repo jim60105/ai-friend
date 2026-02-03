@@ -6,10 +6,12 @@ import { createAgentConfig, getDefaultAgentType } from "@acp/agent-factory.ts";
 import { ContextAssembler } from "./context-assembler.ts";
 import { WorkspaceManager } from "./workspace-manager.ts";
 import type { SkillRegistry } from "@skills/registry.ts";
+import type { SessionRegistry } from "../skill-api/session-registry.ts";
 import type { Config } from "../types/config.ts";
 import type { NormalizedEvent } from "../types/events.ts";
 import type { PlatformAdapter } from "@platforms/platform-adapter.ts";
 import type { ClientConfig } from "@acp/types.ts";
+import { join } from "@std/path";
 
 const logger = createLogger("SessionOrchestrator");
 
@@ -30,6 +32,7 @@ export class SessionOrchestrator {
   private workspaceManager: WorkspaceManager;
   private contextAssembler: ContextAssembler;
   private skillRegistry: SkillRegistry;
+  private sessionRegistry: SessionRegistry;
   private config: Config;
 
   constructor(
@@ -37,10 +40,12 @@ export class SessionOrchestrator {
     contextAssembler: ContextAssembler,
     skillRegistry: SkillRegistry,
     config: Config,
+    sessionRegistry: SessionRegistry,
   ) {
     this.workspaceManager = workspaceManager;
     this.contextAssembler = contextAssembler;
     this.skillRegistry = skillRegistry;
+    this.sessionRegistry = sessionRegistry;
     this.config = config;
   }
 
@@ -69,7 +74,32 @@ export class SessionOrchestrator {
         workingDir: workspace.path,
       });
 
-      // 2. Assemble initial context
+      // 2. Register session in SessionRegistry (if skill API is enabled)
+      let shellSessionId: string | null = null;
+      if (this.config.skillApi?.enabled) {
+        shellSessionId = this.sessionRegistry.register({
+          platform: event.platform,
+          channelId: event.channelId,
+          userId: event.userId,
+          guildId: event.guildId || undefined,
+          isDm: event.isDm,
+          workspace,
+          platformAdapter,
+          triggerEvent: event,
+          timeoutMs: this.config.skillApi.sessionTimeoutMs,
+        });
+
+        // Create SESSION_ID file in workspace
+        const sessionIdFile = join(workspace.path, "SESSION_ID");
+        await Deno.writeTextFile(sessionIdFile, shellSessionId);
+
+        sessionLogger.info("Shell session registered", {
+          shellSessionId,
+          sessionIdFile,
+        });
+      }
+
+      // 3. Assemble initial context
       const context = await this.contextAssembler.assembleContext(
         event,
         workspace,
@@ -170,6 +200,26 @@ export class SessionOrchestrator {
       } finally {
         await connector.disconnect();
         sessionLogger.debug("Agent disconnected");
+
+        // Clean up shell session if it exists
+        if (shellSessionId) {
+          this.sessionRegistry.remove(shellSessionId);
+          sessionLogger.debug("Shell session cleaned up", { shellSessionId });
+
+          // Remove SESSION_ID file
+          const sessionIdFile = join(workspace.path, "SESSION_ID");
+          try {
+            await Deno.remove(sessionIdFile);
+          } catch (error) {
+            // Only ignore NotFound errors; log other errors
+            if (!(error instanceof Deno.errors.NotFound)) {
+              sessionLogger.warn("Failed to remove SESSION_ID file", {
+                error: error instanceof Error ? error.message : String(error),
+                path: sessionIdFile,
+              });
+            }
+          }
+        }
       }
     } catch (error) {
       sessionLogger.error("Session failed", {

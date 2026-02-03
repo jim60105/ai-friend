@@ -108,6 +108,23 @@ export interface HealthConfig {
 }
 
 /**
+ * Skill API configuration
+ */
+export interface SkillAPIConfig {
+  /** Enable skill API server */
+  enabled: boolean;
+
+  /** Port for skill API server */
+  port: number;
+
+  /** Host for skill API server (should be localhost) */
+  host: string;
+
+  /** Session timeout in milliseconds */
+  sessionTimeoutMs: number;
+}
+
+/**
  * Complete application configuration
  */
 export interface Config {
@@ -117,6 +134,7 @@ export interface Config {
   workspace: WorkspaceConfig;
   logging: LoggingConfig;
   health?: HealthConfig;
+  skillApi?: SkillAPIConfig;
 }
 
 /**

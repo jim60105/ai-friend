@@ -60,9 +60,13 @@ export class ShutdownHandler {
       return;
     }
 
-    const { platformRegistry } = this.context;
+    const { platformRegistry, agentCore } = this.context;
 
     try {
+      // Shutdown agent core (stops skill API server, session registry)
+      logger.info("Shutting down agent core");
+      await agentCore.shutdown();
+
       // Disconnect all platforms
       logger.info("Disconnecting platforms");
       await platformRegistry.disconnectAll();
