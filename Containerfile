@@ -101,10 +101,6 @@ COPY --link --chown=$UID:0 --chmod=775 <<EOF /home/deno/.copilot/mcp-config.json
 }
 EOF
 
-# Set ownership and permissions for MCP config
-RUN chown $UID:0 /home/deno/.copilot/mcp-config.json && \
-    chmod 664 /home/deno/.copilot/mcp-config.json
-
 # Copy cached Deno dependencies from cache stage
 COPY --link --chown=$UID:0 --chmod=775 --from=cache /deno-dir/ /deno-dir/
 
