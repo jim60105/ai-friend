@@ -113,6 +113,24 @@ export class AgentConnector {
   }
 
   /**
+   * Set the model for a session
+   */
+  async setSessionModel(sessionId: string, modelId: string): Promise<void> {
+    if (!this.connection) {
+      throw new Error("Not connected to agent");
+    }
+
+    const logger = this.options.logger as Logger;
+
+    await this.connection.unstable_setSessionModel({
+      sessionId,
+      modelId,
+    });
+
+    logger.info("Session model set", { sessionId, modelId });
+  }
+
+  /**
    * Send a prompt to the Agent and wait for response
    */
   async prompt(sessionId: string, text: string): Promise<acp.PromptResponse> {

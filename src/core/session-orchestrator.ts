@@ -116,6 +116,13 @@ export class SessionOrchestrator {
         const sessionId = await connector.createSession();
         sessionLogger.info("Agent session created", { sessionId });
 
+        // Set the model for the session
+        await connector.setSessionModel(sessionId, this.config.agent.model);
+        sessionLogger.info("Agent session model set", {
+          sessionId,
+          model: this.config.agent.model,
+        });
+
         // Clear reply state before prompting
         const replyHandler = this.skillRegistry.getReplyHandler();
         replyHandler.clearReplyState(workspace.key, event.channelId);
