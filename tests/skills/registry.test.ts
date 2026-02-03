@@ -185,3 +185,52 @@ Deno.test("SkillRegistry - getReplyHandler returns reply handler", () => {
   // Cleanup
   Deno.removeSync(tempDir, { recursive: true });
 });
+
+Deno.test("SkillRegistry - executeSkill handles handler exceptions", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const workspaceManager = new WorkspaceManager({
+    repoPath: tempDir,
+    workspacesDir: "workspaces",
+  });
+  const memoryStore = new MemoryStore(workspaceManager, {
+    searchLimit: 10,
+    maxChars: 2000,
+  });
+  const registry = new SkillRegistry(memoryStore);
+
+  const workspace: WorkspaceInfo = {
+    key: "discord/123/456",
+    components: {
+      platform: "discord",
+      userId: "123",
+      channelId: "456",
+    },
+    path: `${tempDir}/workspaces/discord/123/456`,
+    isDm: true,
+  };
+
+  const context: SkillContext = {
+    workspace,
+    platformAdapter: createMockPlatformAdapter(),
+    channelId: "456",
+    userId: "123",
+  };
+
+  // Try to save memory without workspace directory (should cause error)
+  const result = await registry.executeSkill(
+    "memory-save",
+    {
+      content: "Test memory",
+      visibility: "public",
+      importance: "normal",
+    },
+    context,
+  );
+
+  // Should handle the error gracefully
+  assertEquals(result.success, false);
+  assertEquals(typeof result.error, "string");
+
+  // Cleanup
+  await Deno.remove(tempDir, { recursive: true });
+});

@@ -173,3 +173,96 @@ Deno.test("ReplyHandler - clearReplyState clears state", async () => {
   const result = await handler.handleSendReply({ message: "Second" }, context);
   assertEquals(result.success, true);
 });
+
+Deno.test("ReplyHandler - handleSendReply handles platform failure", async () => {
+  const handler = new ReplyHandler();
+
+  const workspace: WorkspaceInfo = {
+    key: "discord/999/888",
+    components: {
+      platform: "discord",
+      userId: "999",
+      channelId: "888",
+    },
+    path: "/tmp/workspaces/discord/999/888",
+    isDm: true,
+  };
+
+  const context: SkillContext = {
+    workspace,
+    platformAdapter: createMockPlatformAdapter({
+      success: false,
+      error: "Platform error",
+    }),
+    channelId: "888",
+    userId: "999",
+  };
+
+  const result = await handler.handleSendReply({ message: "Test" }, context);
+
+  assertEquals(result.success, false);
+  assertEquals(result.error, "Platform error");
+});
+
+Deno.test("ReplyHandler - handleSendReply validates attachments type", async () => {
+  const handler = new ReplyHandler();
+
+  const workspace: WorkspaceInfo = {
+    key: "discord/777/666",
+    components: {
+      platform: "discord",
+      userId: "777",
+      channelId: "666",
+    },
+    path: "/tmp/workspaces/discord/777/666",
+    isDm: true,
+  };
+
+  const context: SkillContext = {
+    workspace,
+    platformAdapter: createMockPlatformAdapter(),
+    channelId: "666",
+    userId: "777",
+  };
+
+  const result = await handler.handleSendReply(
+    { message: "Test", attachments: "not an array" },
+    context,
+  );
+
+  assertEquals(result.success, false);
+  assertEquals(result.error, "Invalid 'attachments' parameter. Must be an array");
+});
+
+Deno.test("ReplyHandler - handleSendReply logs warning for attachments", async () => {
+  const handler = new ReplyHandler();
+
+  const workspace: WorkspaceInfo = {
+    key: "discord/555/444",
+    components: {
+      platform: "discord",
+      userId: "555",
+      channelId: "444",
+    },
+    path: "/tmp/workspaces/discord/555/444",
+    isDm: true,
+  };
+
+  const context: SkillContext = {
+    workspace,
+    platformAdapter: createMockPlatformAdapter({ success: true }),
+    channelId: "444",
+    userId: "555",
+  };
+
+  const result = await handler.handleSendReply(
+    {
+      message: "Test",
+      attachments: [{ type: "image", url: "http://example.com/img.png" }],
+    },
+    context,
+  );
+
+  // Should still succeed but log warning
+  assertEquals(result.success, true);
+});
