@@ -1,31 +1,19 @@
 // src/platforms/misskey/misskey-utils.ts
 
-import { NormalizedEvent, PlatformMessage, Platform } from "@types/events.ts";
+import type { entities } from "misskey-js";
+import type { NormalizedEvent, Platform, PlatformMessage } from "../../types/events.ts";
 
 /**
- * Misskey Note object type
+ * Misskey Note type (using misskey-js entities)
  */
-export interface MisskeyNote {
-  id: string;
-  text: string | null;
-  userId: string;
-  user: {
-    id: string;
-    username: string;
-    name: string | null;
-  };
-  createdAt: string;
-  visibility: "public" | "home" | "followers" | "specified";
-  replyId?: string | null;
-  reply?: MisskeyNote | null;
-}
+export type MisskeyNote = entities.Note;
 
 /**
  * Convert Misskey Note to NormalizedEvent
  */
 export function normalizeMisskeyNote(
   note: MisskeyNote,
-  botId: string,
+  _botId: string,
   isDm: boolean,
 ): NormalizedEvent {
   return {

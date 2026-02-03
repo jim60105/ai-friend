@@ -90,7 +90,7 @@ export class MisskeyClient {
   /**
    * Get current user info (i.e., the bot's account info)
    */
-  async getSelf(): Promise<{
+  getSelf(): Promise<{
     id: string;
     username: string;
     name: string | null;

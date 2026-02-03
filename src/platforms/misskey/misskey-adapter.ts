@@ -1,34 +1,29 @@
 // src/platforms/misskey/misskey-adapter.ts
 
-import { Channel } from "misskey-js/api.js";
+import { ChannelConnection, type Channels } from "misskey-js";
 import { createLogger } from "@utils/logger.ts";
 import { PlatformAdapter } from "@platforms/platform-adapter.ts";
+import type { Platform, PlatformMessage } from "../../types/events.ts";
 import {
-  Platform,
-  NormalizedEvent,
-  PlatformMessage,
-} from "@types/events.ts";
-import {
-  PlatformCapabilities,
   ConnectionState,
-  ReplyOptions,
-  ReplyResult,
-} from "@types/platform.ts";
-import { PlatformError, ErrorCode } from "@types/errors.ts";
+  PlatformCapabilities,
+  type ReplyOptions,
+  type ReplyResult,
+} from "../../types/platform.ts";
+import { ErrorCode, PlatformError } from "../../types/errors.ts";
 import { MisskeyClient } from "./misskey-client.ts";
 import {
-  MisskeyAdapterConfig,
   DEFAULT_MISSKEY_CONFIG,
   MISSKEY_STREAMING_CHANNELS,
+  MisskeyAdapterConfig,
 } from "./misskey-config.ts";
 import {
+  buildReplyParams,
   MisskeyNote,
   normalizeMisskeyNote,
   noteToPlatformMessage,
-  shouldRespondToNote,
   removeBotMention,
-  isDirectMessage,
-  buildReplyParams,
+  shouldRespondToNote,
 } from "./misskey-utils.ts";
 
 const logger = createLogger("MisskeyAdapter");
@@ -48,7 +43,7 @@ export class MisskeyAdapter extends PlatformAdapter {
   private readonly config: Required<MisskeyAdapterConfig>;
   private botId: string | null = null;
   private botUsername: string | null = null;
-  private mainChannel: Channel<{ name: "main" }> | null = null;
+  private mainChannel: ChannelConnection<Channels["main"]> | null = null;
   private reconnectAttempts = 0;
 
   constructor(config: MisskeyAdapterConfig) {
@@ -86,8 +81,8 @@ export class MisskeyAdapter extends PlatformAdapter {
         this.handleNote(note, false);
       });
 
-      this.mainChannel.on("messagingMessage", (message: unknown) => {
-        // Handle DM (if using messaging API)
+      this.mainChannel.on("newChatMessage", (message: unknown) => {
+        // Handle DM
         const note = message as MisskeyNote;
         this.handleNote(note, true);
       });
@@ -199,7 +194,7 @@ export class MisskeyAdapter extends PlatformAdapter {
   /**
    * Disconnect from Misskey
    */
-  async disconnect(): Promise<void> {
+  disconnect(): Promise<void> {
     logger.info("Disconnecting from Misskey");
 
     if (this.mainChannel) {
@@ -209,6 +204,8 @@ export class MisskeyAdapter extends PlatformAdapter {
 
     this.client.disconnectStream();
     this.updateConnectionState(ConnectionState.DISCONNECTED);
+
+    return Promise.resolve();
   }
 
   /**
@@ -314,9 +311,7 @@ export class MisskeyAdapter extends PlatformAdapter {
     } catch (error) {
       throw new PlatformError(
         ErrorCode.PLATFORM_API_ERROR,
-        `Failed to fetch messages: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        `Failed to fetch messages: ${error instanceof Error ? error.message : String(error)}`,
         { channelId },
       );
     }
@@ -326,8 +321,8 @@ export class MisskeyAdapter extends PlatformAdapter {
    * Search notes by keyword
    */
   override async searchRelatedMessages(
-    guildId: string,
-    channelId: string,
+    _guildId: string,
+    _channelId: string,
     query: string,
     limit: number,
   ): Promise<PlatformMessage[]> {

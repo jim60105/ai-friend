@@ -2,30 +2,52 @@
 
 import { assertEquals } from "@std/assert";
 import {
+  buildReplyParams,
+  isDirectMessage,
+  isMentionToBot,
+  type MisskeyNote,
   normalizeMisskeyNote,
   noteToPlatformMessage,
-  isMentionToBot,
   removeBotMention,
-  isDirectMessage,
   shouldRespondToNote,
-  buildReplyParams,
-  MisskeyNote,
 } from "@platforms/misskey/misskey-utils.ts";
 
+// Create a minimal mock note for testing utility functions
 function createMockNote(overrides: Partial<MisskeyNote> = {}): MisskeyNote {
-  return {
+  const base: MisskeyNote = {
     id: "note123",
     text: "Hello @testbot!",
     userId: "user123",
     user: {
       id: "user123",
-      username: "testuser",
       name: "Test User",
+      username: "testuser",
+      host: null,
+      avatarUrl: "https://example.com/avatar.png",
+      avatarBlurhash: null,
+      avatarDecorations: [],
+      isBot: false,
+      isCat: false,
+      emojis: {},
+      onlineStatus: "unknown",
     },
     createdAt: "2024-01-01T00:00:00.000Z",
     visibility: "public",
+    localOnly: false,
+    reactionAcceptance: null,
+    renoteCount: 0,
+    repliesCount: 0,
+    reactionCount: 0,
+    reactions: {},
+    reactionEmojis: {},
+    fileIds: [],
+    files: [],
+    replyId: null,
+    renoteId: null,
     ...overrides,
-  };
+  } as MisskeyNote;
+
+  return base;
 }
 
 Deno.test("normalizeMisskeyNote - should normalize public mention", () => {
