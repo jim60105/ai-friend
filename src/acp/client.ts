@@ -35,7 +35,7 @@ export class ChatbotClient implements acp.Client {
     params: acp.RequestPermissionRequest,
   ): Promise<acp.RequestPermissionResponse> {
     this.logger.debug("Permission requested", {
-      toolCall: params.toolCall.title,
+      toolCall: params.toolCall,
       kind: params.toolCall.kind,
     });
 
