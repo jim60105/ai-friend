@@ -160,10 +160,30 @@ export class ChatbotClient implements acp.Client {
         break;
 
       case "tool_call_update":
-        this.logger.info("Tool call updated", {
+        // Log tool call updates with full context
+        const logContext: Record<string, unknown> = {
           id: update.toolCallId,
           status: update.status,
-        });
+        };
+
+        // Add error information if status is failed
+        if (update.status === "failed") {
+          // ACP SDK may include error details in various fields
+          const updateAny = update as any;
+          if (updateAny.output) {
+            logContext.output = updateAny.output;
+          }
+          if (updateAny.error) {
+            logContext.error = updateAny.error;
+          }
+          if (updateAny.exitCode !== undefined) {
+            logContext.exitCode = updateAny.exitCode;
+          }
+          // Log full update object for debugging
+          this.logger.error("Tool call failed", logContext);
+        } else {
+          this.logger.info("Tool call updated", logContext);
+        }
         break;
 
       case "plan":
