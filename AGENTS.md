@@ -10,7 +10,8 @@ Agent Chatbot is a multi-platform conversational AI bot that acts as an **ACP (A
 
 - **We are the ACP Client**: We spawn and communicate with external ACP Agents
 - **External CLI tools are the Agents**: GitHub Copilot CLI, Gemini CLI execute AI tasks
-- **Skills are our capabilities**: We expose SKILL.md files that external Agents can invoke
+- **Skills are shell-based**: We provide Deno TypeScript skill scripts that Agents can execute
+- **Skill API Server**: HTTP server for skills to communicate back to the main bot
 - **Workspace isolation**: Each conversation context has its own isolated working directory
 
 ## Technology Stack
@@ -21,6 +22,7 @@ Agent Chatbot is a multi-platform conversational AI bot that acts as an **ACP (A
 | Language        | TypeScript               | (Deno native) |
 | ACP SDK         | @agentclientprotocol/sdk | 0.13.1        |
 | Discord Library | discord.js               | ^14.0.0       |
+| Misskey Library | misskey-js               | ^2024.10.1    |
 | Configuration   | YAML (via @std/yaml)     | -             |
 | Testing         | Deno.test + @std/assert  | -             |
 
@@ -32,31 +34,36 @@ Agent Chatbot is a multi-platform conversational AI bot that acts as an **ACP (A
 ├─────────────────────────────────────────────────────────────┤
 │  Platform Adapters (Discord/Misskey)                        │
 │           ↓                                                 │
-│  Agent Core (SessionOrchestrator)                           │
+│  AgentCore → SessionOrchestrator                            │
 │           ↓                                                 │
-│  ACP Client SDK (ClientSideConnection)                      │
+│  AgentConnector → ACP ClientSideConnection                  │
 │           ↓ (spawn subprocess, stdio JSON-RPC)              │
 ├─────────────────────────────────────────────────────────────┤
 │           External ACP AGENTS                               │
 │  (GitHub Copilot CLI / Gemini CLI)                          │
-│           ↓ (reads our SKILL.md, invokes our skills)        │
+│           ↓ (executes our shell-based skills)               │
 ├─────────────────────────────────────────────────────────────┤
-│  Skill Handlers (in our chatbot)                            │
-│  - memory-save, memory-search                               │
-│  - send-reply, fetch-context                                │
+│  Shell Skills (Deno scripts in skills/ directory)           │
+│           ↓ (calls back via HTTP)                           │
+│  Skill API Server (HTTP endpoint)                           │
+│           ↓                                                 │
+│  Skill Handlers (memory, reply, context)                    │
 │  Memory Store, Workspace Manager                            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### Core Components
 
-| Directory        | Purpose                                            |
-| ---------------- | -------------------------------------------------- |
-| `src/core/`      | Agent session, workspace manager, context assembly |
-| `src/platforms/` | Platform adapters (Discord, Misskey)               |
-| `src/skills/`    | Skill handlers invoked by external Agents          |
-| `src/types/`     | TypeScript type definitions                        |
-| `src/utils/`     | Logging, configuration loading, utilities          |
+| Directory          | Purpose                                                |
+| ------------------ | ------------------------------------------------------ |
+| `src/core/`        | Agent session, workspace manager, context assembly     |
+| `src/acp/`         | ACP Client integration, agent connector                |
+| `src/platforms/`   | Platform adapters (Discord, Misskey)                   |
+| `src/skills/`      | Internal skill handlers (memory, reply, context)       |
+| `src/skill-api/`   | HTTP server for shell-based skills                     |
+| `src/types/`       | TypeScript type definitions                            |
+| `src/utils/`       | Logging, configuration loading, utilities              |
+| `skills/`          | Shell-based skill scripts (executed by external agent) |
 
 ## Build & Development Commands
 
@@ -208,18 +215,41 @@ interface PatchEvent {
 
 ### 4. Skills & Final Reply (Feature 04)
 
-- Only `send_reply` skill can send content externally
-- Maximum **one reply per session**
+**Shell-Based Skills Architecture**:
+
+- Skills are Deno TypeScript scripts in `skills/` directory
+- External Agents execute these scripts with `--session-id` parameter
+- Scripts call back to main bot via HTTP API (Skill API Server)
+- Session-based authentication ensures security
+
+**Available Skills**:
+
+| Skill             | Purpose                      | HTTP Endpoint              |
+| ----------------- | ---------------------------- | -------------------------- |
+| `memory-save`     | Save new memory              | POST /api/skill/memory-save     |
+| `memory-search`   | Search existing memories     | POST /api/skill/memory-search   |
+| `memory-patch`    | Update memory attributes     | POST /api/skill/memory-patch    |
+| `fetch-context`   | Get additional platform data | POST /api/skill/fetch-context   |
+| `send-reply`      | Send final reply (max 1)     | POST /api/skill/send-reply      |
+
+**Single Reply Rule**:
+
+- Only `send-reply` skill sends content externally
+- Maximum **one reply per session** (enforced by SessionRegistry)
+- Attempting second reply returns 409 Conflict error
 - All other outputs (tool calls, reasoning) stay internal
 
+**Skill API Implementation**:
+
 ```typescript
-// Skills exposed to external Agents via SKILL.md
-const skills = {
-  "memory-save": saveMemory, // Save new memory
-  "memory-search": searchMemory, // Search memories
-  "send-reply": sendReply, // Send final reply (max 1)
-  "fetch-context": fetchContext, // Get more context
-};
+// Skill scripts call HTTP API with session ID and parameters
+const result = await fetch("http://localhost:3001/api/skill/memory-save", {
+  method: "POST",
+  body: JSON.stringify({
+    sessionId: "sess_abc123",
+    parameters: { content: "User likes TypeScript", visibility: "public" }
+  })
+});
 ```
 
 ### 5. Platform Abstraction (Feature 05)
@@ -249,25 +279,43 @@ Platform adapters must implement:
 
 We use `@agentclientprotocol/sdk` for Client-side connection:
 
+**AgentConnector** (`src/acp/agent-connector.ts`):
+
+- Spawns external ACP agent as subprocess (copilot/gemini CLI)
+- Creates bidirectional JSON-RPC stream (stdin/stdout)
+- Manages agent lifecycle (connect, disconnect, cleanup)
+
+**ChatbotClient** (`src/acp/client.ts`):
+
+- Implements ACP `Client` interface
+- Handles callbacks from external agents:
+  - `requestPermission`: Permission requests
+  - `sessionUpdate`: Session state changes
+  - `readTextFile`: Read files from workspace
+  - `writeTextFile`: Write files to workspace
+
+**Session Flow**:
+
 ```typescript
-import { Client, ClientSideConnection } from "@agentclientprotocol/sdk";
+// 1. Create and connect agent
+const connector = new AgentConnector({ agentConfig, clientConfig, skillRegistry });
+await connector.connect();
 
-// Our chatbot implements the Client interface
-const client: Client = {
-  requestPermission: async (request) => {/* handle permission */},
-  sessionUpdate: async (update) => {/* handle session updates */},
-  readTextFile: async (path) => {/* read file in workspace */},
-  writeTextFile: async (path, content) => {/* write file */},
-};
+// 2. Create session with workspace
+const sessionId = await connector.createSession();
+await connector.setSessionModel(sessionId, "gpt-4");
 
-// Connect to external Agent (e.g., GitHub Copilot CLI)
-const connection = new ClientSideConnection(client, ndJsonStream);
-await connection.initialize({ protocolVersion: PROTOCOL_VERSION });
+// 3. Send prompt and get response
+const response = await connector.prompt(sessionId, assembledContext);
 
-// Create session and send prompts
-const session = await connection.newSession({ workingDirectory: workspacePath });
-const response = await connection.prompt(session.id, userMessage);
+// 4. Disconnect when done
+await connector.disconnect();
 ```
+
+**Supported Agents**:
+
+- **GitHub Copilot CLI** (`@github/copilot-cli`) - Default when `GITHUB_TOKEN` is set
+- **Gemini CLI** - Alternative agent (requires separate configuration)
 
 ## Error Handling
 
@@ -363,43 +411,90 @@ Environment variables override config file values.
 agent-chatbot/
 ├── src/
 │   ├── main.ts               # Entry point
+│   ├── bootstrap.ts          # Application bootstrap
+│   ├── shutdown.ts           # Graceful shutdown handler
+│   ├── healthcheck.ts        # Health check server (optional)
+│   ├── acp/                  # ACP Client integration
+│   │   ├── agent-connector.ts # Manages ACP agent subprocess
+│   │   ├── agent-factory.ts   # Creates agent configurations
+│   │   ├── client.ts          # ChatbotClient (implements ACP Client)
+│   │   └── types.ts           # ACP-related types
 │   ├── core/
-│   │   ├── workspace.ts      # Workspace manager
-│   │   ├── session.ts        # Agent session orchestration
-│   │   ├── context.ts        # Context assembly
-│   │   ├── memory.ts         # Memory operations
-│   │   └── error-handler.ts  # Global error handling
+│   │   ├── agent-core.ts      # Main integration point
+│   │   ├── session-orchestrator.ts # Conversation flow orchestration
+│   │   ├── workspace-manager.ts    # Workspace isolation manager
+│   │   ├── memory-store.ts         # Memory JSONL operations
+│   │   ├── context-assembler.ts    # Initial context assembly
+│   │   ├── message-handler.ts      # Platform event processing
+│   │   ├── reply-dispatcher.ts     # Reply sending coordination
+│   │   └── config-loader.ts        # Configuration loading
 │   ├── platforms/
-│   │   ├── adapter.ts        # Platform adapter interface
-│   │   ├── discord/          # Discord implementation
-│   │   └── misskey/          # Misskey implementation (stub)
-│   ├── skills/
-│   │   ├── memory-save.ts    # memory-save skill handler
-│   │   ├── memory-search.ts  # memory-search skill handler
-│   │   ├── send-reply.ts     # send-reply skill handler
-│   │   └── fetch-context.ts  # fetch-context skill handler
+│   │   ├── platform-adapter.ts     # Platform adapter base class
+│   │   ├── platform-registry.ts    # Platform management
+│   │   ├── discord/                # Discord implementation
+│   │   │   ├── discord-adapter.ts
+│   │   │   ├── discord-config.ts
+│   │   │   └── discord-utils.ts
+│   │   └── misskey/                # Misskey implementation
+│   │       ├── misskey-adapter.ts
+│   │       ├── misskey-client.ts
+│   │       ├── misskey-config.ts
+│   │       └── misskey-utils.ts
+│   ├── skills/               # Internal skill handlers
+│   │   ├── registry.ts       # Skill handler registry
+│   │   ├── memory-handler.ts # Memory operations
+│   │   ├── reply-handler.ts  # Reply sending (single reply rule)
+│   │   ├── context-handler.ts # Context fetching
+│   │   └── types.ts          # Skill-related types
+│   ├── skill-api/            # HTTP API for shell skills
+│   │   ├── server.ts         # HTTP server implementation
+│   │   └── session-registry.ts # Active session tracking
 │   ├── types/
 │   │   ├── config.ts         # Configuration types
-│   │   ├── event.ts          # Event types
+│   │   ├── events.ts         # Event types
 │   │   ├── memory.ts         # Memory types
+│   │   ├── workspace.ts      # Workspace types
+│   │   ├── platform.ts       # Platform types
 │   │   ├── errors.ts         # Error classes
 │   │   └── logger.ts         # Logger types
 │   └── utils/
-│       ├── logger.ts         # Structured logging
-│       └── config.ts         # Configuration loading
+│       ├── logger.ts         # Structured JSON logging
+│       └── env.ts            # Environment utilities
+├── skills/                   # Shell-based skill scripts
+│   ├── memory-save/
+│   │   ├── SKILL.md          # Skill definition for agent
+│   │   └── skill.ts          # Deno script
+│   ├── memory-search/
+│   │   ├── SKILL.md
+│   │   └── skill.ts
+│   ├── memory-patch/
+│   │   ├── SKILL.md
+│   │   └── skill.ts
+│   ├── fetch-context/
+│   │   ├── SKILL.md
+│   │   └── skill.ts
+│   ├── send-reply/
+│   │   ├── SKILL.md
+│   │   └── skill.ts
+│   └── lib/
+│       └── client.ts         # Shared skill API client
 ├── prompts/
 │   └── system.md             # Bot system prompt
-├── skills/                   # SKILL.md definitions (read by external Agents)
-│   ├── memory-save.SKILL.md
-│   ├── memory-search.SKILL.md
-│   ├── send-reply.SKILL.md
-│   └── fetch-context.SKILL.md
 ├── config/
-│   └── config.example.yaml
+│   └── config.example.yaml   # Example configuration
 ├── docs/
 │   ├── DESIGN.md             # Detailed design document
+│   ├── SKILLS_IMPLEMENTATION.md # Skills implementation guide
 │   └── features/             # BDD feature specs (Gherkin)
 ├── tests/                    # Test files (mirrors src/ structure)
+│   ├── core/
+│   ├── acp/
+│   ├── platforms/
+│   ├── skills/
+│   ├── skill-api/
+│   ├── integration/
+│   ├── mocks/
+│   └── main.test.ts
 ├── deno.json                 # Deno configuration
 ├── deno.lock                 # Dependency lock file
 ├── config.yaml               # Runtime configuration
