@@ -159,7 +159,7 @@ export class ChatbotClient implements acp.Client {
         });
         break;
 
-      case "tool_call_update":
+      case "tool_call_update": {
         // Log tool call updates with full context
         const logContext: Record<string, unknown> = {
           id: update.toolCallId,
@@ -169,7 +169,7 @@ export class ChatbotClient implements acp.Client {
         // Add error information if status is failed
         if (update.status === "failed") {
           // ACP SDK may include error details in various fields
-          const updateAny = update as any;
+          const updateAny = update as Record<string, unknown>;
           if (updateAny.output) {
             logContext.output = updateAny.output;
           }
@@ -186,6 +186,7 @@ export class ChatbotClient implements acp.Client {
           this.logger.info("Tool call updated", logContext);
         }
         break;
+      }
 
       case "plan":
         this.logger.debug("Agent plan", {
