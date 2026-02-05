@@ -16,7 +16,7 @@ ARG TARGETVARIANT
 RUN --mount=type=cache,id=apt-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/var/cache/apt \
     --mount=type=cache,id=aptlists-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/var/lib/apt/lists \
     apt-get update && apt-get install -y --no-install-recommends \
-        git
+    git
 
 ########################################
 # GitHub Copilot unpack stage
@@ -59,7 +59,7 @@ ARG UID
 # Set up directories with proper permissions
 # OpenShift compatibility: root group (GID 0) for arbitrary UID support
 RUN install -d -m 775 -o $UID -g 0 /app && \
-    install -d -m 775 -o $UID -g 0 /data && \
+    install -d -m 775 -o $UID -g 0 /app/data && \
     install -d -m 775 -o $UID -g 0 /licenses
 
 # Copy license file (OpenShift Policy)
@@ -90,7 +90,7 @@ COPY --link --chown=$UID:0 --chmod=775 skills/ /home/deno/.copilot/skills/
 WORKDIR /app
 
 # Volume for persistent data (workspaces and memory)
-VOLUME ["/data"]
+VOLUME ["/app/data"]
 
 # Set HOME environment variable for copilot skills discovery
 ENV HOME=/home/deno

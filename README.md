@@ -185,7 +185,7 @@ Configuration is loaded from `config.yaml` (YAML format). See [config/config.exa
 ```bash
 # Run with volume mounts
 podman run -d --rm \
-  -v ./data:/data \
+  -v ./data:/app/data \
   -v ./config.yaml:/app/config.yaml:ro \
   --env-file .env \
   --name ai-friend \

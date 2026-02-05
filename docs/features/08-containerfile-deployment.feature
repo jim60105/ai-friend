@@ -24,7 +24,7 @@
   情境: Local repo 作為持久化 Volume
     當容器執行時
     那麼必須將 local repo 路徑掛載為 Volume
-    而且預設 Volume 掛載點為 "/data"
+    而且預設 Volume 掛載點為 "/app/data"
     而且容器內的配置必須指向該 Volume 路徑
     而且 working directory 會在該 Volume 下動態建立
     而且容器重啟後記憶日誌必須保持不變
@@ -44,7 +44,7 @@
     當容器執行時
     那麼容器內程序不得以 root 使用者執行
     而且必須建立專用使用者(例如 deno)執行 Bot 程序
-    而且該使用者必須對 /data Volume 有讀寫權限
+    而且該使用者必須對 /app/data Volume 有讀寫權限
     而且對其他路徑只有必要的讀取權限
     而且 Containerfile 必須使用 USER 指令切換到非特權使用者
 

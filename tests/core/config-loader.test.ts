@@ -33,7 +33,7 @@ agent:
   systemPromptPath: "./prompts/system.md"
   tokenLimit: 4096
 workspace:
-  repoPath: "/data"
+  repoPath: "./data"
   workspacesDir: "workspaces"
 `;
 
@@ -41,7 +41,7 @@ workspace:
     const result = await loadConfig(dir);
     assertEquals(result.platforms.discord.enabled, true);
     assertEquals(result.agent.model, "gpt-4");
-    assertEquals(result.workspace.repoPath, "/data");
+    assertEquals(result.workspace.repoPath, "./data");
   });
 });
 
@@ -58,7 +58,7 @@ agent:
   systemPromptPath: "./prompts/system.md"
   tokenLimit: 4096
 workspace:
-  repoPath: "/data"
+  repoPath: "./data"
   workspacesDir: "workspaces"
 `;
 
@@ -84,7 +84,7 @@ agent:
   systemPromptPath: "./prompts/system.md"
   tokenLimit: 4096
 workspace:
-  repoPath: "/data"
+  repoPath: "./data"
   workspacesDir: "workspaces"
 `;
 
@@ -134,7 +134,7 @@ agent:
   systemPromptPath: "./prompts/system.md"
   tokenLimit: 4096
 workspace:
-  repoPath: "/data"
+  repoPath: "./data"
   workspacesDir: "workspaces"
 `;
 

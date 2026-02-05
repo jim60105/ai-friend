@@ -505,7 +505,7 @@ memory:
   max_chars: 2000
 
 workspace:
-  repo_path: "/data"
+  repo_path: "./data"
   workspaces_dir: "workspaces"
 ```
 
@@ -574,13 +574,13 @@ LABEL org.opencontainers.image.licenses="MIT"
 
 | Mount Point        | Purpose                                |
 | ------------------ | -------------------------------------- |
-| `/data`            | Local repo (workspaces, memory files)  |
+| `/app/data`        | Local repo (workspaces, memory files)  |
 | `/app/config.yaml` | Configuration file (optional override) |
 | `/app/prompts/`    | Prompt files (optional override)       |
 
 **Persistence Requirements:**
 
-- `/data` volume must persist across container restarts
+- `/app/data` volume must persist across container restarts
 - Memory files must remain intact after restart
 
 ### Health Checks
