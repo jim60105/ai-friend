@@ -11,27 +11,12 @@ Search through saved memories to retrieve relevant information.
 ## Usage
 
 ```bash
-scripts/memory-search.ts \
+${HOME}/.agents/skills/memory-search/scripts/memory-search.ts \
   --session-id "$SESSION_ID" \
   --query "hiking preferences" \
   --limit 10
 ```
 
-## Output
+## Critical Rules
 
-```json
-{
-  "success": true,
-  "data": {
-    "memories": [
-      {
-        "id": "mem_xxx",
-        "content": "User loves hiking in the mountains",
-        "visibility": "public",
-        "importance": "high",
-        "timestamp": "2024-01-01T12:00:00Z"
-      }
-    ]
-  }
-}
-```
+1. **Timeout**: The script won't run for more than 30 seconds. If it hangs, do stop_bash and retry ONCE. If it fails again, return an error message in JSON format.

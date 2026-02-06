@@ -1,6 +1,6 @@
 ---
 name: memory-save
-description: Save important information to persistent cross-conversation memory. Use when you learn something important about the user or context that should be remembered for future conversations.
+description: Save important information to persistent cross-conversation memory. Use when you learn something important about the user or context that should be remembered for future conversations. You MUST use this skill to save any information you want to recall later, you MUST NOT manually modify the memory files.
 allowed-tools: Bash
 ---
 
@@ -11,7 +11,7 @@ Save important information that should persist across conversations.
 ## Usage
 
 ```bash
-scripts/memory-save.ts \
+${HOME}/.agents/skills/memory-save/scripts/memory-save.ts \
   --session-id "$SESSION_ID" \
   --content "User prefers formal communication" \
   --importance high
@@ -23,11 +23,6 @@ scripts/memory-save.ts \
 - `--visibility`: `public` (default) or `private`
 - `--importance`: `normal` (default) or `high`
 
-## Output
+## Critical Rules
 
-```json
-{
-  "success": true,
-  "data": { "id": "mem_xxx", "content": "...", "visibility": "public", "importance": "normal" }
-}
-```
+1. **Timeout**: The script won't run for more than 30 seconds. If it hangs, do stop_bash and retry ONCE. If it fails again, return an error message in JSON format.

@@ -1,6 +1,6 @@
 ---
 name: memory-patch
-description: Modify memory metadata (visibility, importance) or disable memories. Use when you need to update the status of existing memories.
+description: Modify memory metadata (visibility, importance) or disable memories. Use when you need to update the status of existing memories. You MUST use this skill to modify memory metadata, you MUST NOT manually modify the memory files.
 allowed-tools: Bash
 ---
 
@@ -12,13 +12,13 @@ Modify metadata of existing memories without changing content.
 
 ```bash
 # Disable a memory
-scripts/memory-patch.ts \
+${HOME}/.agents/skills/memory-patch/scripts/memory-patch.ts \
   --session-id "$SESSION_ID" \
   --memory-id "mem_abc123" \
   --disabled
 
 # Change importance
-scripts/memory-patch.ts \
+${HOME}/.agents/skills/memory-patch/scripts/memory-patch.ts \
   --session-id "$SESSION_ID" \
   --memory-id "mem_abc123" \
   --importance high
@@ -35,8 +35,6 @@ scripts/memory-patch.ts \
 - **Cannot modify content** - content is immutable
 - **Cannot delete** - can only disable
 
-## Output
+## Critical Rules
 
-```json
-{ "success": true, "data": { "id": "mem_abc123", "enabled": false } }
-```
+1. **Timeout**: The script won't run for more than 30 seconds. If it hangs, do stop_bash and retry ONCE. If it fails again, return an error message in JSON format.

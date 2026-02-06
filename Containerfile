@@ -85,8 +85,8 @@ COPY --link --chown=$UID:0 --chmod=775 src/ /app/src/
 # Copy default prompts (can be overridden by mounting custom prompts to /app/prompts)
 COPY --link --chown=$UID:0 --chmod=775 prompts/ /app/prompts/
 
-# Copy skills to ~/.copilot/skills/ for personal skills
-COPY --link --chown=$UID:0 --chmod=775 skills/ /home/deno/.copilot/skills/
+# Copy skills to ~/.agents/skills/ for personal skills
+COPY --link --chown=$UID:0 --chmod=775 skills/ /home/deno/.agents/skills/
 
 WORKDIR /app
 

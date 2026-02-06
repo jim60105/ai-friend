@@ -11,32 +11,13 @@ Send your final response to the user. This is the gateway to external communicat
 ## Usage
 
 ```bash
-scripts/send-reply.ts \
+${HOME}/.agents/skills/send-reply/scripts/send-reply.ts \
   --session-id "$SESSION_ID" \
   --message "Your reply message here"
 ```
 
 ## Critical Rules
 
-1. **One reply only**: You can only send ONE reply per interaction
+1. **One reply only**: You can only send ONE reply per interaction. You MUST send exactly one reply.
 2. **This is the ONLY external output**: All other processing remains internal
-3. **Make it complete**: Ensure your reply addresses the user's request fully
-
-## Output Format
-
-On success:
-
-```json
-{ "success": true, "data": { "messageId": "123456789", "timestamp": "2024-01-01T12:00:00Z" } }
-```
-
-On failure:
-
-```json
-{ "success": false, "error": "Reply already sent for this session" }
-```
-
-## Exit Codes
-
-- `0`: Success
-- `1`: Error (check stderr or stdout JSON for details)
+3. **Timeout**: The script won't run for more than 30 seconds. If it hangs, do stop_bash and retry ONCE. If it fails again, return an error message in JSON format.

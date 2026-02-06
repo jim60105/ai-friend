@@ -12,13 +12,13 @@ Retrieve additional context from the platform to better understand the conversat
 
 ```bash
 # Get recent messages
-scripts/fetch-context.ts \
+${HOME}/.agents/skills/fetch-context/scripts/fetch-context.ts \
   --session-id "$SESSION_ID" \
   --type recent_messages \
   --limit 20
 
 # Search messages
-scripts/fetch-context.ts \
+${HOME}/.agents/skills/fetch-context/scripts/fetch-context.ts \
   --session-id "$SESSION_ID" \
   --type search_messages \
   --query "project deadline" \
@@ -31,23 +31,6 @@ scripts/fetch-context.ts \
 - `search_messages`: Search for messages by keyword
 - `user_info`: Get information about the current user
 
-## Output
+## Critical Rules
 
-```json
-{
-  "success": true,
-  "data": {
-    "type": "recent_messages",
-    "data": [
-      {
-        "messageId": "123",
-        "userId": "456",
-        "username": "Alice",
-        "content": "Hello!",
-        "timestamp": "2024-01-01T12:00:00Z",
-        "isBot": false
-      }
-    ]
-  }
-}
-```
+1. **Timeout**: The script won't run for more than 30 seconds. If it hangs, do stop_bash and retry ONCE. If it fails again, return an error message in JSON format.
