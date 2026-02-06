@@ -47,7 +47,12 @@ Deno.test("createAgentConfig - creates copilot config correctly", () => {
   const agentConfig = createAgentConfig("copilot", "/tmp/workspace", config);
 
   assertEquals(agentConfig.command, "copilot");
-  assertEquals(agentConfig.args, ["--acp"]);
+  assertEquals(agentConfig.args, [
+    "--acp",
+    "--disable-builtin-mcps",
+    "--no-ask-user",
+    "--no-color",
+  ]);
   assertEquals(agentConfig.cwd, "/tmp/workspace");
   assertEquals(agentConfig.env?.GITHUB_TOKEN, "test-github-token");
 });
@@ -233,7 +238,14 @@ Deno.test("createAgentConfig - adds --yolo flag to copilot when yolo is true", (
   const agentConfig = createAgentConfig("copilot", "/tmp/workspace", config, true);
 
   assertEquals(agentConfig.command, "copilot");
-  assertEquals(agentConfig.args, ["--acp", "--yolo"]);
+  assertEquals(agentConfig.args, [
+    "--acp",
+    "--disable-builtin-mcps",
+    "--no-ask-user",
+    "--no-color",
+    "--allow-all-tools",
+    "--allow-all-urls",
+  ]);
   assertEquals(agentConfig.cwd, "/tmp/workspace");
 });
 
@@ -242,7 +254,12 @@ Deno.test("createAgentConfig - does not add --yolo flag to copilot when yolo is 
   const agentConfig = createAgentConfig("copilot", "/tmp/workspace", config, false);
 
   assertEquals(agentConfig.command, "copilot");
-  assertEquals(agentConfig.args, ["--acp"]);
+  assertEquals(agentConfig.args, [
+    "--acp",
+    "--disable-builtin-mcps",
+    "--no-ask-user",
+    "--no-color",
+  ]);
   assertEquals(agentConfig.cwd, "/tmp/workspace");
 });
 
